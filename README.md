@@ -1,24 +1,32 @@
-# Terraform EC2 Jenkins Lab
+# ⚙️ Terraform EC2 Jenkins CI/CD Lab
 
-## Project Overview
-This project demonstrates how to provision AWS EC2 using Terraform, install Jenkins, and run CI jobs.
+![Terraform](https://img.shields.io/badge/IaC-Terraform-623CE4?style=for-the-badge&logo=terraform)
+![AWS](https://img.shields.io/badge/Cloud-AWS-FF9900?style=for-the-badge&logo=amazonaws)
+![Jenkins](https://img.shields.io/badge/CI-CD-Jenkins-D24939?style=for-the-badge&logo=jenkins)
+![Linux](https://img.shields.io/badge/Linux-Server-FCC624?style=for-the-badge&logo=linux)
+![GitHub](https://img.shields.io/badge/Version-Control-GitHub-181717?style=for-the-badge&logo=github)
 
-## Workflow
-Terraform → EC2 → SSH → Jenkins Install → Jenkins Job → GitHub
+---
 
-## Steps Performed
-1. Created EC2 using Terraform
-2. Connected via SSH
-3. Installed Jenkins
-4. Created Jenkins freestyle job
-5. Executed Linux commands via Jenkins
+## 📌 Project Overview
 
-## Tools Used
-- Terraform
-- AWS EC2
-- Jenkins
-- Linux
-- GitHub
+This project demonstrates a complete **DevOps CI/CD workflow** using Infrastructure as Code.
 
-## Outcome
-Successfully built a full DevOps pipeline environment.
+It provisions an **AWS EC2 instance using Terraform**, installs and configures **Jenkins**, and executes a basic CI pipeline connected with GitHub.
+
+---
+
+## 🧠 Architecture Flow
+
+```text
+GitHub Repository
+        ↓
+Terraform (Infrastructure as Code)
+        ↓
+AWS EC2 Instance (Ubuntu)
+        ↓
+Jenkins Installation
+        ↓
+CI Job Execution
+        ↓
+Build Output / Logs
