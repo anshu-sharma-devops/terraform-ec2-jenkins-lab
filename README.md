@@ -1,80 +1,121 @@
-# 🚀 Terraform + AWS + Jenkins Controller-Agent Lab
+# 🚀 Terraform + AWS + Jenkins + Ansible CI/CD Lab
 
-![Terraform](https://img.shields.io/badge/IaC-Terraform-623CE4?style=for-the-badge\&logo=terraform)
-![AWS](https://img.shields.io/badge/Cloud-AWS-FF9900?style=for-the-badge\&logo=amazonaws)
-![Jenkins](https://img.shields.io/badge/CI%2FCD-Jenkins-D24939?style=for-the-badge\&logo=jenkins)
-![Linux](https://img.shields.io/badge/OS-Ubuntu-E95420?style=for-the-badge\&logo=ubuntu)
-
----
-
-# 📖 Project Overview
-
-This project demonstrates how to provision AWS infrastructure using Terraform, install Jenkins on an EC2 instance, configure a Jenkins Agent Node on a separate EC2 instance, and execute pipelines remotely through the Jenkins Controller-Agent architecture.
-
-The objective was to understand Infrastructure as Code (IaC), Jenkins administration, remote build execution, GitHub integration, and Terraform automation.
+![Terraform](https://img.shields.io/badge/IaC-Terraform-623CE4?style=for-the-badge&logo=terraform)
+![AWS](https://img.shields.io/badge/Cloud-AWS-FF9900?style=for-the-badge&logo=amazonaws)
+![Jenkins](https://img.shields.io/badge/CI%2FCD-Jenkins-D24939?style=for-the-badge&logo=jenkins)
+![Ansible](https://img.shields.io/badge/Config-Ansible-EE0000?style=for-the-badge&logo=ansible)
+![Linux](https://img.shields.io/badge/OS-Ubuntu-E95420?style=for-the-badge&logo=ubuntu)
+![GitHub](https://img.shields.io/badge/SCM-GitHub-181717?style=for-the-badge&logo=github)
 
 ---
 
-# 🏗 Architecture
+## 📖 Project Overview
+
+A production-style DevOps lab demonstrating end-to-end CI/CD automation using **GitHub**, **Jenkins**, **Terraform**, and **Ansible** on AWS EC2.
+
+The pipeline is triggered automatically on every GitHub push. Jenkins orchestrates the full workflow — provisioning infrastructure with Terraform and configuring servers with Ansible — without manual intervention.
+
+This project was built to develop real-world DevOps skills including Infrastructure as Code, CI/CD pipeline design, configuration management, Jenkins Controller-Agent architecture, and hands-on cloud troubleshooting.
+
+---
+
+## 🏗 Architecture
 
 ```text
-Terraform
+Developer
     │
-    ▼
-AWS EC2 (Jenkins Controller)
-    │
-    │ SSH
-    ▼
-AWS EC2 (Jenkins Agent)
-    │
-    ▼
-Jenkins Pipeline
-    │
+    │  git push
     ▼
 GitHub Repository
+(anshu-sharma-devops/terraform-ec2-jenkins-lab)
+    │
+    │  Webhook trigger
+    ▼
+Jenkins Controller EC2
+(terraform-jenkins-server)
+    │
+    │  SSH — delegates build execution
+    ▼
+Jenkins Agent EC2
+(terraform-agent-server)
+    │
+    ├── Terraform Init → Validate → Plan → Apply
+    │       │
+    │       ▼
+    │   AWS Infrastructure (EC2, Security Groups)
+    │
+    └── Ansible Playbook
+            │
+            ▼
+        Configure deployed EC2 instances
 ```
 
 ---
 
-# 🎯 Objectives
+## 🎯 What This Project Demonstrates
 
-* Provision AWS EC2 instances using Terraform
-* Configure Security Groups
-* Install Jenkins on EC2
-* Create and manage Jenkins Jobs
-* Configure Jenkins Agent Node
-* Connect Controller and Agent using SSH
-* Execute pipelines on remote agents
-* Integrate GitHub repositories
-* Execute Terraform commands through Jenkins
+- **Infrastructure as Code** — provisioning AWS resources with Terraform
+- **CI/CD Pipeline Design** — multi-stage Jenkins pipelines with approval gates
+- **Configuration Management** — automated server setup with Ansible playbooks
+- **Jenkins Controller-Agent Architecture** — distributed build execution over SSH
+- **GitHub Integration** — webhook-triggered automated pipelines
+- **AWS Administration** — EC2, Security Groups, Key Pairs, Free Tier management
+- **DevOps Troubleshooting** — AWS account migration, Terraform state recovery, EC2 key pair issues
 
 ---
 
-# 🛠 Technologies Used
+## 🛠 Technologies Used
 
-* AWS EC2
-* Terraform
-* Jenkins
-* Ubuntu Linux
-* Git
-* GitHub
-* SSH
-* Java (OpenJDK 21)
+| Technology | Purpose |
+|------------|---------|
+| AWS EC2 | Cloud compute instances |
+| Terraform | Infrastructure provisioning (IaC) |
+| Jenkins | CI/CD orchestration |
+| Ansible | Server configuration management |
+| Ubuntu 24.04 LTS | Operating system |
+| GitHub | Source control + webhook trigger |
+| SSH | Secure Controller-Agent communication |
+| Java OpenJDK 21 | Jenkins runtime |
 
 ---
 
-# ⚙️ Implementation Steps
+## 📁 Repository Structure
 
-## 1. Provision Jenkins Controller
+```
+terraform-ec2-jenkins-lab/
+├── main.tf                          # Jenkins Controller EC2 + Security Group
+├── agent.tf                         # Jenkins Agent EC2
+├── variables.tf                     # Input variables (region, instance type, key)
+├── outputs.tf                       # Public IPs, instance IDs
+├── Jenkinsfile                      # Full CI/CD pipeline definition
+├── ansible/
+│   ├── inventory/
+│   │   └── aws_ec2.yml              # Dynamic EC2 inventory
+│   └── playbooks/
+│       └── configure_server.yml    # Server configuration playbook
+├── screenshots/                     # Project screenshots
+└── README.md
+```
 
-Using Terraform:
+---
 
-* Created Security Group
-* Opened ports 22 and 8080
-* Created EC2 instance
-* Configured SSH access
+## ⚙️ Infrastructure Setup
 
-## 2. Install Jenkins
+### 1. Provision EC2 Instances with Terraform
+
+```bash
+terraform init
+terraform validate
+terraform plan
+terraform apply
+```
+
+Terraform provisions:
+- `terraform-jenkins-server` — Jenkins Controller (port 22, 8080)
+- `terraform-agent-server` — Jenkins Agent (port 22)
+- Security Groups for both instances
+
+### 2. Install Jenkins on Controller
 
 ```bash
 sudo apt update
@@ -84,124 +125,124 @@ sudo systemctl enable jenkins
 sudo systemctl start jenkins
 ```
 
-Verified Jenkins service:
-
-```bash
-sudo systemctl status jenkins
+Access Jenkins:
+```
+http://<CONTROLLER_PUBLIC_IP>:8080
 ```
 
----
-
-## 3. Access Jenkins
-
-```text
-http://<public-ip>:8080
-```
-
-Retrieved initial password:
-
+Retrieve initial admin password:
 ```bash
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
----
-
-## 4. Create Jenkins Agent
-
-Provisioned a second EC2 instance using Terraform.
-
-Installed Java:
+### 3. Prepare the Jenkins Agent
 
 ```bash
+sudo apt update
 sudo apt install openjdk-21-jre -y
+sudo mkdir -p /home/ubuntu/jenkins-agent
+sudo chown ubuntu:ubuntu /home/ubuntu/jenkins-agent
 ```
 
 ---
 
-## 5. Configure Jenkins Node
+## 🔗 Jenkins Controller-Agent SSH Setup
 
-Jenkins Dashboard:
+### Generate SSH Key on Controller
 
-```text
-Manage Jenkins
-→ Nodes
-→ New Node
+```bash
+sudo su - jenkins
+ssh-keygen -t rsa -b 4096
+cat ~/.ssh/id_rsa.pub   # copy this output
 ```
 
-Configured:
+### Authorize Controller on Agent
 
-* Permanent Agent
-* SSH Launch Method
-* Ubuntu User
-* SSH Private Key Authentication
-
-Successfully connected:
-
-```text
-Agent successfully connected and online
+```bash
+# On the Agent EC2
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo "<JENKINS_PUBLIC_KEY>" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
 ```
+
+### Test Connection from Controller
+
+```bash
+# As jenkins user on Controller
+ssh ubuntu@<AGENT_PRIVATE_IP>
+# Type yes when prompted — connection confirmed ✅
+```
+
+### Add Node in Jenkins UI
+
+```
+Manage Jenkins → Nodes → New Node
+```
+
+| Field | Value |
+|-------|-------|
+| Node Name | `terraform-agent` |
+| Type | Permanent Agent |
+| Remote root directory | `/home/ubuntu/jenkins-agent` |
+| Labels | `agent-1` |
+| Launch method | Launch agents via SSH |
+| Host | Agent Private IP |
+| Credentials | SSH Username with private key (ubuntu) |
+| Host Key Verification | Non-verifying Verification Strategy |
 
 ---
 
-## 6. Execute Pipeline on Agent
+## 🔄 CI/CD Pipeline — GitHub → Jenkins → Terraform → Ansible
 
-Pipeline Example:
+### Pipeline Stages
+
+```text
+GitHub push
+    ↓  webhook
+Stage 1: Checkout — clone repo from GitHub
+    ↓
+Stage 2: Terraform Init — initialize providers
+    ↓
+Stage 3: Terraform Validate — check config syntax
+    ↓
+Stage 4: Terraform Plan — preview infrastructure changes
+    ↓
+Stage 5: Manual Approval Gate — human review before apply
+    ↓
+Stage 6: Terraform Apply — provision AWS infrastructure
+    ↓
+Stage 7: Ansible Deploy — configure provisioned servers
+    ↓
+Pipeline Success ✅
+```
+
+### Jenkinsfile
 
 ```groovy
 pipeline {
-    agent {
-        label 'agent-1'
+    agent { label 'agent-1' }
+
+    environment {
+        AWS_REGION = 'ap-south-1'
+        REPO_URL   = 'https://github.com/anshu-sharma-devops/terraform-ec2-jenkins-lab'
     }
 
     stages {
-        stage('Verify Agent') {
+
+        stage('Checkout') {
             steps {
-                sh '''
-                hostname
-                whoami
-                pwd
-                java --version
-                '''
+                git branch: 'main', url: "${REPO_URL}"
             }
         }
-    }
-}
-```
 
-Result:
-
-```text
-Running on Jenkins Agent
-Java Installed
-Pipeline Success
-```
-
----
-
-## 7. GitHub Integration
-
-Connected Jenkins Pipeline to GitHub repository.
-
-Pipeline performed:
-
-* Clone repository
-* Validate repository contents
-* Execute Terraform commands
-
----
-
-## 8. Terraform Pipeline
-
-```groovy
-pipeline {
-    agent {
-        label 'agent-1'
-    }
-
-    stages {
         stage('Terraform Init') {
             steps {
-                sh 'terraform init'
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials'
+                ]]) {
+                    sh 'terraform init'
+                }
             }
         }
 
@@ -210,167 +251,183 @@ pipeline {
                 sh 'terraform validate'
             }
         }
+
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials'
+                ]]) {
+                    sh 'terraform plan -out=tfplan'
+                }
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                input message: 'Review Terraform plan. Approve to apply?'
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials'
+                ]]) {
+                    sh 'terraform apply tfplan'
+                }
+            }
+        }
+
+        stage('Ansible Deploy') {
+            steps {
+                sh '''
+                    ansible-playbook -i ansible/inventory/aws_ec2.yml \
+                        ansible/playbooks/configure_server.yml \
+                        --private-key ~/.ssh/jenkins-key.pem \
+                        -u ubuntu
+                '''
+            }
+        }
+    }
+
+    post {
+        success { echo '✅ Pipeline completed. Infrastructure provisioned and configured.' }
+        failure { echo '❌ Pipeline failed. Check stage logs for details.' }
+        always  { archiveArtifacts artifacts: 'tfplan', allowEmptyArchive: true }
     }
 }
 ```
 
 ---
 
-# 📚 Key Learnings
+## 📦 Ansible Configuration
 
-* Infrastructure as Code using Terraform
-* AWS EC2 provisioning
-* Security Group management
-* Jenkins installation and configuration
-* Jenkins Controller-Agent architecture
-* SSH-based node communication
-* GitHub integration
-* Pipeline automation
-* Remote build execution
-
-
-# 🔄 AWS Account Migration & Infrastructure Recovery
-
-During this project, the original AWS account became unavailable, requiring the entire infrastructure to be migrated and rebuilt in a new AWS Free Tier account.
-
-## Challenges Encountered
-
-### 1. AWS Account Migration
-
-* Configured a new AWS account
-* Reconfigured AWS CLI credentials
-* Verified account access using:
+### Install Ansible on Agent
 
 ```bash
-aws sts get-caller-identity
+sudo apt update
+sudo apt install ansible -y
+ansible --version
 ```
 
-### 2. Terraform State Recovery
+### Dynamic Inventory
 
-Terraform detected resources that existed in the state file but no longer existed in AWS.
-
-Example:
-
-```text
-Terraform detected the following changes made outside of Terraform
-aws_instance.jenkins_server has been deleted
-aws_security_group.jenkins_sg has been deleted
+```yaml
+# ansible/inventory/aws_ec2.yml
+plugin: amazon.aws.aws_ec2
+regions:
+  - ap-south-1
+filters:
+  instance-state-name: running
+  tag:Project: jenkins-lab
+keyed_groups:
+  - key: tags.Role
+    prefix: role
 ```
 
-Learned how Terraform state and real infrastructure can become out of sync and how Terraform recreates missing resources.
+### Server Configuration Playbook
 
-### 3. EC2 Key Pair Troubleshooting
+```yaml
+# ansible/playbooks/configure_server.yml
+- name: Configure deployed EC2 server
+  hosts: all
+  become: yes
+  tasks:
 
-Encountered:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
 
-```text
-InvalidKeyPair.NotFound
+    - name: Install Java
+      apt:
+        name: openjdk-21-jre
+        state: present
+
+    - name: Create app directory
+      file:
+        path: /opt/app
+        state: directory
+        owner: ubuntu
+        mode: '0755'
+
+    - name: Confirm configuration
+      debug:
+        msg: "Server {{ inventory_hostname }} configured successfully"
 ```
 
-Root Cause:
+---
 
-* Terraform configuration referenced an old key pair from the previous AWS account.
+## 🔄 AWS Account Migration & Lessons Learned
 
-Resolution:
+During this project, the original AWS account became unavailable. The entire infrastructure was rebuilt in a new AWS Free Tier account — providing real-world experience with infrastructure recovery.
 
-* Created a new EC2 Key Pair named:
+### Challenges Solved
 
-```text
-jenkins-key
+**Terraform State Out of Sync**
+```bash
+terraform state rm aws_instance.jenkins_server
+terraform state rm aws_security_group.jenkins_sg
+terraform apply
 ```
 
-* Updated Terraform configuration files:
-
+**EC2 Key Pair Not Found**
 ```hcl
+# Updated Terraform config
 key_name = "jenkins-key"
 ```
 
-### 4. Free Tier Compatibility Issues
-
-Encountered:
-
-```text
-The specified instance type is not eligible for Free Tier
-```
-
-Root Cause:
-
-* Original project used:
-
-```text
-t2.micro
-```
-
-* New AWS account Free Tier eligibility had changed.
-
-Verified eligible instance types using:
-
+**Free Tier Instance Type Changed**
 ```bash
 aws ec2 describe-instance-types \
---filters Name=free-tier-eligible,Values=true \
---region ap-south-1
+  --filters Name=free-tier-eligible,Values=true \
+  --region ap-south-1
 ```
+Updated from `t2.micro` → `t3.micro`
 
-Updated Terraform configuration to use:
-
+**Key Lesson — Remote Terraform State prevents this entirely:**
 ```hcl
-instance_type = "t3.micro"
-```
-
-### 5. Infrastructure Recreation
-
-Successfully recreated:
-
-* Jenkins Controller
-* Jenkins Agent
-* Security Groups
-* SSH Access
-* Terraform State
-
-Terraform Outputs:
-
-```text
-Jenkins Controller Public IP
-Jenkins Agent Public IP
-Instance IDs
-Private IP Addresses
-```
-
-### 6. GitHub Repository Maintenance
-
-Updated Terraform codebase and synchronized project configuration with the new AWS environment.
-
-This process provided hands-on experience with:
-
-* AWS Account Migration
-* Terraform State Management
-* Infrastructure Recovery
-* Free Tier Troubleshooting
-* EC2 Key Pair Management
-* Git Version Control
-* Real-world DevOps Troubleshooting
-
-```
-
-## 🚀 Additional DevOps Learning Outcome
-
-One of the most valuable lessons from this project was learning how to troubleshoot and recover infrastructure failures instead of only deploying new resources. Rebuilding the environment from scratch strengthened practical knowledge of Terraform, AWS, Jenkins, Linux, Git, and cloud troubleshooting workflows used by DevOps engineers in production environments.
+terraform {
+  backend "s3" {
+    bucket         = "your-tfstate-bucket"
+    key            = "jenkins-lab/terraform.tfstate"
+    region         = "ap-south-1"
+    dynamodb_table = "terraform-state-lock"
+    encrypt        = true
+  }
+}
 ```
 
 ---
 
-# ✅ Project Outcome
+## ✅ Project Outcome
 
-Successfully built a production-style Jenkins Controller-Agent environment on AWS using Terraform and Ubuntu Linux.
+Successfully built a production-style CI/CD environment where:
 
-The Jenkins Controller manages jobs while build execution is delegated to a dedicated Jenkins Agent node, demonstrating a scalable CI/CD architecture used in real-world DevOps environments.
+- A **GitHub push** automatically triggers a Jenkins pipeline
+- **Terraform** provisions AWS infrastructure on the Jenkins Agent
+- **Ansible** configures the deployed servers automatically
+- The **Jenkins Controller-Agent** architecture distributes build execution
+- A **manual approval gate** prevents unreviewed infrastructure changes
 
 ---
 
-# 👨‍💻 Author
+## 📚 Skills Demonstrated
 
-**Anshu Sharma**
+| Category | Skills |
+|----------|--------|
+| IaC | Terraform, AWS provider, state management |
+| CI/CD | Jenkins pipelines, Jenkinsfile, webhooks, approval gates |
+| Config Mgmt | Ansible playbooks, dynamic inventory |
+| Cloud | AWS EC2, Security Groups, Key Pairs, IAM |
+| Linux | Ubuntu, SSH, systemd, file permissions |
+| DevOps | Troubleshooting, migration, recovery, Git |
 
-Aspiring Cloud & DevOps Engineer
+---
 
-GitHub: https://github.com/anshu-sharma-devops
+## 👨‍💻 Author
+
+**Anshu Sharma** — Aspiring Cloud & DevOps Engineer
+
+GitHub: [https://github.com/anshu-sharma-devops](https://github.com/anshu-sharma-devops)
