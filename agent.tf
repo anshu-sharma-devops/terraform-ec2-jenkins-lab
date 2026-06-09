@@ -18,8 +18,8 @@ resource "aws_security_group" "agent_sg" {
 
 resource "aws_instance" "jenkins_agent" {
   ami                    = "ami-0f58b397bc5c1f2e8"
-  instance_type          = "t2.micro"
-  key_name               = "healthcare-key"
+  instance_type          = "t3.micro"
+  key_name               = "jenkins-key"
   vpc_security_group_ids = [aws_security_group.agent_sg.id]
 
   tags = {
