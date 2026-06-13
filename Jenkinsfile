@@ -81,9 +81,19 @@ pipeline {
 
         stage('Post Actions') {
             steps {
-                echo 'Terraform apply complete!'
-                sh 'terraform output'
+                withCredentials([
+                    string(credentialsId: '6ed56b40-ef1d-495b-9e6f-d6658effcde0', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: '82ee2094-7f7e-4fb5-beac-69e2dbc7c0f9', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    echo 'Terraform apply complete!'
+                    sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform output
+                    '''
+                }
             }
+        }
         }
     }
 
