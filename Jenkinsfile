@@ -2,8 +2,10 @@ pipeline {
     agent { label 'agent-1' }
 
     environment {
-        AWS_REGION = 'ap-south-1'
-        REPO_URL   = 'https://github.com/anshu-sharma-devops/terraform-ec2-jenkins-lab'
+        AWS_REGION             = 'ap-south-1'
+        REPO_URL               = 'https://github.com/anshu-sharma-devops/terraform-ec2-jenkins-lab'
+        AWS_ACCESS_KEY_ID      = credentials('6ed56b40-ef1d-495b-9e6f-d6658effcde0')
+        AWS_SECRET_ACCESS_KEY  = credentials('82ee2094-7f7e-4fb5-beac-69e2dbc7c0f9')
     }
 
     stages {
@@ -17,17 +19,8 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                withCredentials([
-                    string(credentialsId: '6ed56b40-ef1d-495b-9e6f-d6658effcde0', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: '82ee2094-7f7e-4fb5-beac-69e2dbc7c0f9', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    echo 'Initializing Terraform...'
-                    sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        terraform init
-                    '''
-                }
+                echo 'Initializing Terraform...'
+                sh 'terraform init'
             }
         }
 
@@ -40,17 +33,8 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                withCredentials([
-                    string(credentialsId: '6ed56b40-ef1d-495b-9e6f-d6658effcde0', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: '82ee2094-7f7e-4fb5-beac-69e2dbc7c0f9', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    echo 'Running Terraform Plan...'
-                    sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        terraform plan
-                    '''
-                }
+                echo 'Running Terraform Plan...'
+                sh 'terraform plan'
             }
         }
 
@@ -65,35 +49,16 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                withCredentials([
-                    string(credentialsId: '6ed56b40-ef1d-495b-9e6f-d6658effcde0', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: '82ee2094-7f7e-4fb5-beac-69e2dbc7c0f9', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    echo 'Applying Terraform changes...'
-                    sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        terraform apply -auto-approve
-                    '''
-                }
+                echo 'Applying Terraform changes...'
+                sh 'terraform apply -auto-approve'
             }
         }
 
         stage('Post Actions') {
             steps {
-                withCredentials([
-                    string(credentialsId: '6ed56b40-ef1d-495b-9e6f-d6658effcde0', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: '82ee2094-7f7e-4fb5-beac-69e2dbc7c0f9', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    echo 'Terraform apply complete!'
-                    sh '''
-                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                        terraform output
-                    '''
-                }
+                echo 'Terraform apply complete!'
+                sh 'terraform output'
             }
-        }
         }
     }
 
