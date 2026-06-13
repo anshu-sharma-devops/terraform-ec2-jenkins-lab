@@ -8,7 +8,7 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
                 echo 'Cloning repository from GitHub...'
                 git branch: 'main', url: "${REPO_URL}"
@@ -17,8 +17,17 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                echo 'Initializing Terraform...'
-                sh 'terraform init'
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    echo 'Initializing Terraform...'
+                    sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform init
+                    '''
+                }
             }
         }
 
@@ -27,6 +36,63 @@ pipeline {
                 echo 'Validating Terraform configuration...'
                 sh 'terraform validate'
             }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    echo 'Running Terraform Plan...'
+                    sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform plan
+                    '''
+                }
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                echo 'Waiting for manual approval...'
+                timeout(time: 10, unit: 'MINUTES') {
+                    input message: 'Do you want to apply the Terraform changes?', ok: 'Apply'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    echo 'Applying Terraform changes...'
+                    sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform apply -auto-approve
+                    '''
+                }
+            }
+        }
+
+        stage('Post Actions') {
+            steps {
+                echo 'Terraform apply complete!'
+                sh 'terraform output'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed! Check the logs above.'
         }
     }
 }
