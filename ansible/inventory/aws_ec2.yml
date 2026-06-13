@@ -8,4 +8,5 @@ keyed_groups:
     prefix: name
 hostnames:
   - ip-address
-
+compose:
+  ansible_host: public_ip_address

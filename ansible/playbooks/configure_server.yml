@@ -1,15 +1,14 @@
 ---
-- name: Configure Jenkins Agent Server
+- name: Common Configuration (Java + Git + Docker)
   hosts: all
   become: yes
-
   tasks:
 
     - name: Update apt cache
       apt:
         update_cache: yes
 
-    - name: Install Java
+    - name: Install Java 21
       apt:
         name: openjdk-21-jre
         state: present
@@ -19,6 +18,54 @@
         name: git
         state: present
 
+    - name: Install Docker dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - gnupg
+        state: present
+
+    - name: Remove conflicting Docker repo if exists
+      file:
+        path: /etc/apt/sources.list.d/docker.list
+        state: absent
+
+    - name: Remove old Docker GPG key if exists
+      file:
+        path: /usr/share/keyrings/docker-archive-keyring.gpg
+        state: absent
+
+    - name: Add Docker GPG key
+      shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable"
+        state: present
+        filename: docker
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
     - name: Create app directory
       file:
         path: /opt/app
@@ -27,6 +74,89 @@
         group: ubuntu
         mode: '0755'
 
-    - name: Print confirmation
+    - name: Print common setup confirmation
       debug:
-        msg: "Server {{ inventory_hostname }} configured successfully by Ansible"
+        msg: "Common setup complete on {{ inventory_hostname }}"
+
+- name: Install Jenkins on Controller
+  hosts: name_terraform_jenkins_server
+  become: yes
+  tasks:
+
+    - name: Create keyrings directory
+      file:
+        path: /usr/share/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Remove old Jenkins GPG key if exists
+      file:
+        path: /usr/share/keyrings/jenkins-keyring.gpg
+        state: absent
+
+    - name: Download Jenkins GPG key
+      shell: |
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key | gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.gpg
+        chmod 644 /usr/share/keyrings/jenkins-keyring.gpg
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Add jenkins user to docker group
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+
+    - name: Start and enable Jenkins
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started
+
+    - name: Get Jenkins initial password
+      shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
+
+    - name: Print Jenkins initial password
+      debug:
+        msg: "Jenkins initial password: {{ jenkins_password.stdout }}"
+
+- name: Configure Jenkins Agent
+  hosts: name_jenkins_agent
+  become: yes
+  tasks:
+
+    - name: Create jenkins user
+      user:
+        name: jenkins
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Create .ssh directory for jenkins user
+      file:
+        path: /home/jenkins/.ssh
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: '0700'
+
+    - name: Add jenkins user to docker group
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+
+    - name: Print agent confirmation
+      debug:
+        msg: "Agent {{ inventory_hostname }} configured successfully"
+        
